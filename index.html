@@ -5,105 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kopi Jalanan | Fuel for the Hustle</title>
     
-    <!-- Tailwind CSS for Layouts -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts: Oswald (Headings) & Roboto (Body) -->
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght=400;700&family=Roboto:wght=300;400;700&display=swap" rel="stylesheet">
     
-    <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        // FIX: Added signInWithCustomToken to the import below
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-
-        // Firebase Configuration
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kopi-jalanan-v1';
-
-        // Global State
+    <script>
+        // Global State (Replaced Firebase with local arrays)
         let cart = [];
-        let products = [];
-        let currentUser = null;
-
-        // --- AUTHENTICATION (System Requirement) ---
-        async function initAuth() {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token);
-            } else {
-                await signInAnonymously(auth);
-            }
-        }
-        initAuth();
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                console.log("User authenticated:", user.uid);
-                // Only fetch products after auth is confirmed
-                fetchProducts(); 
-            }
+        let products = [
+            { id: 'kopi-o', name: 'Kopi-O Special', price: 3.50, desc: 'Our signature strong black coffee with sugar. The fuel you need.', imgUrl: 'https://images.unsplash.com/photo-1517568550268-bf0873a4b6c3?q=80&w=1969&auto=format&fit=crop' },
+            { id: 'kopi-susu', name: 'Kopi Susu Kaw', price: 5.00, desc: 'Creamy, sweet, and strong milk coffee. A Malaysian favorite.', imgUrl: 'https://images.unsplash.com/photo-1541167760496-159c3a3d5e2e?q=80&w=1974&auto=format&fit=crop' },
+            { id: 'matcha', name: 'Iced Matcha Latte', price: 7.00, desc: 'Ceremonial grade matcha with fresh milk, served cold.', imgUrl: 'https://images.unsplash.com/photo-1565574768393-27e1f7481b49?q=80&w=1935&auto=format&fit=crop' },
+            { id: 'americano', name: 'Iced Americano', price: 4.50, desc: 'Simple, pure espresso and cold water. Extra kick.', imgUrl: 'https://images.unsplash.com/photo-1517568550268-bf0873a4b6c3?q=80&w=1969&auto=format&fit=crop' },
+        ];
+        // Ensure products are rendered on load
+        document.addEventListener('DOMContentLoaded', () => {
+            renderMenu();
+            renderAdminTable();
         });
 
-        // --- FIRESTORE FUNCTIONS ---
 
-        // 1. Fetch Products (Real Data Flow)
-        function fetchProducts() {
-            if (!currentUser) return;
-            
-            const productsRef = collection(db, 'artifacts', appId, 'public', 'data', 'products');
-            
-            onSnapshot(productsRef, (snapshot) => {
-                products = [];
-                snapshot.forEach((doc) => {
-                    products.push({ id: doc.id, ...doc.data() });
-                });
-                renderMenu();
-                renderAdminTable();
-            }, (error) => {
-                console.error("Error getting products:", error);
-            });
+        // --- PRODUCT MANAGEMENT (LOCAL IN-MEMORY) ---
+
+        // 1. Fetch Products (Using local array)
+        // This function is now mostly for calling render functions after an update
+        function refreshProductLists() {
+            renderMenu();
+            renderAdminTable();
         }
 
         // 2. Add Product (Admin Logic)
-        window.addProduct = async function(event) {
+        window.addProduct = function(event) {
             event.preventDefault();
-            if (!currentUser) return;
 
             const name = document.getElementById('prodName').value;
             const price = parseFloat(document.getElementById('prodPrice').value);
             const desc = document.getElementById('prodDesc').value;
             const imgUrl = document.getElementById('prodImg').value || 'https://placehold.co/400x300/2c2c2c/FFAE00?text=No+Image';
 
-            try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'products'), {
-                    name, price, desc, imgUrl, createdAt: new Date().toISOString()
-                });
-                alert('Product Added!');
-                document.getElementById('adminForm').reset();
-            } catch (e) {
-                console.error("Error adding document: ", e);
-                alert("Error adding product. Check console.");
-            }
+            const newId = name.toLowerCase().replace(/ /g, '-');
+            
+            // Add to local array
+            products.push({ 
+                id: newId, 
+                name, 
+                price, 
+                desc, 
+                imgUrl, 
+                createdAt: new Date().toISOString()
+            });
+
+            alert('Product Added to Local Inventory!');
+            document.getElementById('adminForm').reset();
+            refreshProductLists();
         }
 
         // 3. Delete Product (Admin Logic)
-        window.deleteProduct = async function(id) {
+        window.deleteProduct = function(id) {
             if(!confirm("Delete this brew?")) return;
-            if (!currentUser) return;
             
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'products', id));
-            } catch (e) {
-                console.error("Error deleting: ", e);
-            }
+            // Filter out the product by id
+            products = products.filter(prod => prod.id !== id);
+            refreshProductLists();
         }
 
         // --- UI FUNCTIONS ---
@@ -235,13 +200,13 @@
 
         window.submitCheckout = function(e) {
             e.preventDefault();
-            alert("This is a prototype. In the full version, this would connect to ToyyibPay/Billplz.");
+            alert("This is a prototype. Checkout successful! (Data was not sent to a server)");
             cart = [];
             updateCartUI();
             showPage('homePage');
         }
 
-        // Make global for HTML access
+        // Make global for HTML access (still needed for clarity, but less critical)
         window.products = products;
 
     </script>
@@ -265,7 +230,6 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-    <!-- NAVIGATION -->
     <nav class="sticky top-0 z-50 bg-black border-b border-zinc-800 px-6 py-4 flex justify-between items-center">
         <div class="text-2xl font-oswald font-bold tracking-wider text-white cursor-pointer" onclick="showPage('homePage')">
             KOPI JALANAN<span class="text-street-yellow">.</span>
@@ -281,12 +245,9 @@
         </div>
     </nav>
 
-    <!-- MAIN CONTENT AREA -->
     <main class="flex-grow">
 
-        <!-- 1. HOMEPAGE -->
         <section id="homePage" class="page-section block">
-            <!-- Hero -->
             <div class="relative h-[70vh] flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center bg-no-repeat">
                 <div class="absolute inset-0 bg-black/70"></div>
                 <div class="relative z-10 text-center px-4">
@@ -301,7 +262,6 @@
                     </button>
                 </div>
             </div>
-            <!-- Features -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-0 border-t border-zinc-800">
                 <div class="p-12 text-center border-b md:border-b-0 md:border-r border-zinc-800">
                     <i class="fas fa-bolt text-3xl text-street-yellow mb-4"></i>
@@ -321,14 +281,12 @@
             </div>
         </section>
 
-        <!-- 2. MENU / LISTING PAGE -->
         <section id="menuPage" class="page-section hidden px-6 py-12 max-w-7xl mx-auto">
             <div class="text-center mb-12">
                 <h2 class="text-4xl font-oswald font-bold uppercase mb-2">The Menu</h2>
                 <div class="w-20 h-1 bg-street-yellow mx-auto"></div>
             </div>
             
-            <!-- Filters (Visual Only for now) -->
             <div class="flex justify-center gap-4 mb-8 text-sm text-gray-500">
                 <span class="text-white cursor-pointer border-b border-street-yellow">All</span>
                 <span class="hover:text-white cursor-pointer">Coffee</span>
@@ -336,14 +294,11 @@
                 <span class="hover:text-white cursor-pointer">Pastries</span>
             </div>
 
-            <!-- Dynamic Product Grid -->
             <div id="menuGrid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                <!-- JS will inject cards here -->
                 <p class="col-span-full text-center text-gray-500">Loading brews...</p>
             </div>
         </section>
 
-        <!-- 3. PRODUCT DETAIL PAGE -->
         <section id="detailPage" class="page-section hidden px-6 py-12 max-w-5xl mx-auto">
             <button onclick="showPage('menuPage')" class="mb-6 text-gray-400 hover:text-white flex items-center gap-2">
                 <i class="fas fa-arrow-left"></i> Back to Menu
@@ -368,20 +323,16 @@
             </div>
         </section>
 
-        <!-- 4. CART PAGE -->
         <section id="cartPage" class="page-section hidden px-6 py-12 max-w-3xl mx-auto">
             <h2 class="text-3xl font-oswald font-bold uppercase mb-8">Your Cart</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Cart Items List -->
                 <div class="md:col-span-2 bg-zinc-900 p-6 border border-zinc-800">
                     <div id="cartList" class="space-y-4">
-                        <!-- JS injects items here -->
                         <p class="text-gray-500">Empty</p>
                     </div>
                 </div>
 
-                <!-- Cart Summary -->
                 <div class="bg-zinc-800 p-6 h-fit">
                     <h3 class="font-oswald text-xl mb-4">Summary</h3>
                     <div class="flex justify-between mb-2 text-gray-400">
@@ -399,7 +350,6 @@
             </div>
         </section>
 
-        <!-- 5. CHECKOUT PAGE -->
         <section id="checkoutPage" class="page-section hidden px-6 py-12 max-w-2xl mx-auto">
             <div class="mb-8 text-center">
                 <h2 class="text-3xl font-oswald font-bold uppercase">Secure Checkout</h2>
@@ -407,7 +357,6 @@
             </div>
 
             <form onsubmit="submitCheckout(event)" class="space-y-6">
-                <!-- Customer Info -->
                 <div class="bg-zinc-900 p-6 border border-zinc-800">
                     <h3 class="text-xl font-oswald mb-4 border-b border-zinc-700 pb-2">1. Contact Info</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -422,7 +371,6 @@
                     </div>
                 </div>
 
-                <!-- Payment Method -->
                 <div class="bg-zinc-900 p-6 border border-zinc-800">
                     <h3 class="text-xl font-oswald mb-4 border-b border-zinc-700 pb-2">2. Payment</h3>
                     <div class="space-y-3">
@@ -456,12 +404,10 @@
             </form>
         </section>
 
-        <!-- 6. ADMIN PANEL (Basic Layout) -->
         <section id="adminPage" class="page-section hidden px-6 py-12 max-w-4xl mx-auto">
             <h2 class="text-3xl font-oswald font-bold uppercase mb-8 text-red-500">Admin Panel</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Add Product Form -->
                 <div class="bg-zinc-900 p-6 border border-zinc-800">
                     <h3 class="font-oswald text-xl mb-4">Add New Product</h3>
                     <form id="adminForm" onsubmit="addProduct(event)" class="space-y-4">
@@ -487,7 +433,6 @@
                     </form>
                 </div>
 
-                <!-- Product List Table -->
                 <div class="md:col-span-2 bg-zinc-900 p-6 border border-zinc-800 overflow-x-auto">
                     <h3 class="font-oswald text-xl mb-4">Current Inventory</h3>
                     <table class="w-full text-sm text-left text-gray-400">
@@ -499,8 +444,7 @@
                             </tr>
                         </thead>
                         <tbody id="adminTableBody">
-                            <!-- JS injects rows -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
@@ -508,7 +452,6 @@
 
     </main>
 
-    <!-- Footer -->
     <footer class="bg-black border-t border-zinc-800 py-8 text-center text-zinc-600 text-sm">
         <p>&copy; 2025 Kopi Jalanan. Kota Samarahan.</p>
         <p class="mt-2">Student Project Prototype.</p>
