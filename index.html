@@ -4,230 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kopi Jalanan | Fuel for the Hustle</title>
-    
+
+    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght=400;700&family=Roboto:wght=300;400;700&display=swap" rel="stylesheet">
-    
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <script>
-        // Global State (Replaced Firebase with local arrays)
-        let cart = [];
-        let products = [
-            { id: 'kopi-o', name: 'Kopi-O Special', price: 3.50, desc: 'Our signature strong black coffee with sugar. The fuel you need.', imgUrl: 'https://images.unsplash.com/photo-1517568550268-bf0873a4b6c3?q=80&w=1969&auto=format&fit=crop' },
-            { id: 'kopi-susu', name: 'Kopi Susu Kaw', price: 5.00, desc: 'Creamy, sweet, and strong milk coffee. A Malaysian favorite.', imgUrl: 'https://images.unsplash.com/photo-1541167760496-159c3a3d5e2e?q=80&w=1974&auto=format&fit=crop' },
-            { id: 'matcha', name: 'Iced Matcha Latte', price: 7.00, desc: 'Ceremonial grade matcha with fresh milk, served cold.', imgUrl: 'https://images.unsplash.com/photo-1565574768393-27e1f7481b49?q=80&w=1935&auto=format&fit=crop' },
-            { id: 'americano', name: 'Iced Americano', price: 4.50, desc: 'Simple, pure espresso and cold water. Extra kick.', imgUrl: 'https://images.unsplash.com/photo-1517568550268-bf0873a4b6c3?q=80&w=1969&auto=format&fit=crop' },
-        ];
-        // Ensure products are rendered on load
-        document.addEventListener('DOMContentLoaded', () => {
-            renderMenu();
-            renderAdminTable();
-        });
-
-
-        // --- PRODUCT MANAGEMENT (LOCAL IN-MEMORY) ---
-
-        // 1. Fetch Products (Using local array)
-        // This function is now mostly for calling render functions after an update
-        function refreshProductLists() {
-            renderMenu();
-            renderAdminTable();
-        }
-
-        // 2. Add Product (Admin Logic)
-        window.addProduct = function(event) {
-            event.preventDefault();
-
-            const name = document.getElementById('prodName').value;
-            const price = parseFloat(document.getElementById('prodPrice').value);
-            const desc = document.getElementById('prodDesc').value;
-            const imgUrl = document.getElementById('prodImg').value || 'https://placehold.co/400x300/2c2c2c/FFAE00?text=No+Image';
-
-            const newId = name.toLowerCase().replace(/ /g, '-');
-            
-            // Add to local array
-            products.push({ 
-                id: newId, 
-                name, 
-                price, 
-                desc, 
-                imgUrl, 
-                createdAt: new Date().toISOString()
-            });
-
-            alert('Product Added to Local Inventory!');
-            document.getElementById('adminForm').reset();
-            refreshProductLists();
-        }
-
-        // 3. Delete Product (Admin Logic)
-        window.deleteProduct = function(id) {
-            if(!confirm("Delete this brew?")) return;
-            
-            // Filter out the product by id
-            products = products.filter(prod => prod.id !== id);
-            refreshProductLists();
-        }
-
-        // --- UI FUNCTIONS ---
-
-        // Render Public Menu
-        function renderMenu() {
-            const grid = document.getElementById('menuGrid');
-            grid.innerHTML = '';
-
-            if (products.length === 0) {
-                grid.innerHTML = '<p class="text-gray-400 text-center col-span-full">No brews available yet. Go to Admin to add products.</p>';
-                return;
-            }
-
-            products.forEach(prod => {
-                const card = `
-                    <div class="bg-zinc-800 border border-zinc-700 p-4 hover:border-amber-500 transition-colors group">
-                        <div class="h-48 overflow-hidden mb-4 relative">
-                            <img src="${prod.imgUrl}" alt="${prod.name}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500">
-                            <div class="absolute top-2 right-2 bg-amber-500 text-black font-bold px-2 py-1 text-sm">RM ${prod.price.toFixed(2)}</div>
-                        </div>
-                        <h3 class="text-2xl font-oswald text-white uppercase mb-1">${prod.name}</h3>
-                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">${prod.desc}</p>
-                        <div class="flex gap-2">
-                            <button onclick="viewDetail('${prod.id}')" class="flex-1 border border-gray-500 text-gray-300 py-2 hover:bg-gray-700 text-sm uppercase tracking-wider">Details</button>
-                            <button onclick="addToCart('${prod.id}')" class="flex-1 bg-amber-500 text-black font-bold py-2 hover:bg-amber-400 text-sm uppercase tracking-wider">Add +</button>
-                        </div>
-                    </div>
-                `;
-                grid.innerHTML += card;
-            });
-        }
-
-        // Render Admin Table
-        function renderAdminTable() {
-            const tbody = document.getElementById('adminTableBody');
-            tbody.innerHTML = '';
-            products.forEach(prod => {
-                tbody.innerHTML += `
-                    <tr class="border-b border-zinc-700">
-                        <td class="p-3">${prod.name}</td>
-                        <td class="p-3">RM ${prod.price.toFixed(2)}</td>
-                        <td class="p-3 text-right">
-                            <button onclick="deleteProduct('${prod.id}')" class="text-red-500 hover:text-red-400"><i class="fas fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        // View Detail Page
-        window.viewDetail = function(id) {
-            const prod = products.find(p => p.id === id);
-            if (!prod) return;
-
-            document.getElementById('detailImage').src = prod.imgUrl;
-            document.getElementById('detailName').innerText = prod.name;
-            document.getElementById('detailPrice').innerText = `RM ${prod.price.toFixed(2)}`;
-            document.getElementById('detailDesc').innerText = prod.desc;
-            
-            // Set the add to cart button in detail view
-            const btn = document.getElementById('detailAddBtn');
-            btn.onclick = () => { addToCart(id); };
-
-            showPage('detailPage');
-        }
-
-        // --- CART LOGIC ---
-
-        window.addToCart = function(id) {
-            const prod = products.find(p => p.id === id);
-            if (!prod) return;
-            
-            cart.push(prod);
-            updateCartUI();
-            // Simple feedback
-            const badge = document.getElementById('cartCount');
-            badge.classList.add('animate-bounce');
-            setTimeout(() => badge.classList.remove('animate-bounce'), 1000);
-        }
-
-        window.removeFromCart = function(index) {
-            cart.splice(index, 1);
-            updateCartUI();
-        }
-
-        function updateCartUI() {
-            // Update Badge
-            document.getElementById('cartCount').innerText = cart.length;
-
-            // Update Cart Page List
-            const list = document.getElementById('cartList');
-            list.innerHTML = '';
-            let total = 0;
-
-            if (cart.length === 0) {
-                list.innerHTML = '<p class="text-gray-500">Your basket is empty.</p>';
-            } else {
-                cart.forEach((item, index) => {
-                    total += item.price;
-                    list.innerHTML += `
-                        <div class="flex justify-between items-center border-b border-zinc-700 py-3">
-                            <div>
-                                <div class="font-bold text-white">${item.name}</div>
-                                <div class="text-sm text-amber-500">RM ${item.price.toFixed(2)}</div>
-                            </div>
-                            <button onclick="removeFromCart(${index})" class="text-gray-500 hover:text-red-500"><i class="fas fa-times"></i></button>
-                        </div>
-                    `;
-                });
-            }
-
-            // Update Totals
-            const totalFormatted = `RM ${total.toFixed(2)}`;
-            document.getElementById('cartTotal').innerText = totalFormatted;
-            document.getElementById('checkoutTotal').innerText = totalFormatted;
-        }
-
-        // --- NAVIGATION & PAGE SWITCHING (SPA) ---
-
-        window.showPage = function(pageId) {
-            // Hide all pages
-            document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
-            // Show target page
-            document.getElementById(pageId).classList.remove('hidden');
-            // Scroll to top
-            window.scrollTo(0,0);
-        }
-
-        window.submitCheckout = function(e) {
-            e.preventDefault();
-            alert("This is a prototype. Checkout successful! (Data was not sent to a server)");
-            cart = [];
-            updateCartUI();
-            showPage('homePage');
-        }
-
-        // Make global for HTML access (still needed for clarity, but less critical)
-        window.products = products;
-
-    </script>
-
-    <style>
-        /* Custom Aesthetics */
-        body {
-            background-color: #1a1a1a; /* Asphalt Dark */
-            color: #e5e5e5;
-        }
-        .font-oswald { font-family: 'Oswald', sans-serif; }
-        .text-street-yellow { color: #FFAE00; }
-        .bg-street-yellow { background-color: #FFAE00; }
-        
-        /* Hide scrollbar for clean modals */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1a1a1a; }
-        ::-webkit-scrollbar-thumb { background: #444; }
-        ::-webkit-scrollbar-thumb:hover { background: #FFAE00; }
-    </style>
+    <!-- External CSS -->
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="min-h-screen flex flex-col">
 
     <nav class="sticky top-0 z-50 bg-black border-b border-zinc-800 px-6 py-4 flex justify-between items-center">
@@ -247,6 +37,7 @@
 
     <main class="flex-grow">
 
+        <!-- HOME PAGE -->
         <section id="homePage" class="page-section block">
             <div class="relative h-[70vh] flex items-center justify-center bg-[url('https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=1974&auto=format&fit=crop')] bg-cover bg-center bg-no-repeat">
                 <div class="absolute inset-0 bg-black/70"></div>
@@ -262,6 +53,7 @@
                     </button>
                 </div>
             </div>
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-0 border-t border-zinc-800">
                 <div class="p-12 text-center border-b md:border-b-0 md:border-r border-zinc-800">
                     <i class="fas fa-bolt text-3xl text-street-yellow mb-4"></i>
@@ -281,12 +73,13 @@
             </div>
         </section>
 
+        <!-- MENU PAGE -->
         <section id="menuPage" class="page-section hidden px-6 py-12 max-w-7xl mx-auto">
             <div class="text-center mb-12">
                 <h2 class="text-4xl font-oswald font-bold uppercase mb-2">The Menu</h2>
                 <div class="w-20 h-1 bg-street-yellow mx-auto"></div>
             </div>
-            
+
             <div class="flex justify-center gap-4 mb-8 text-sm text-gray-500">
                 <span class="text-white cursor-pointer border-b border-street-yellow">All</span>
                 <span class="hover:text-white cursor-pointer">Coffee</span>
@@ -299,11 +92,12 @@
             </div>
         </section>
 
+        <!-- DETAILS PAGE -->
         <section id="detailPage" class="page-section hidden px-6 py-12 max-w-5xl mx-auto">
             <button onclick="showPage('menuPage')" class="mb-6 text-gray-400 hover:text-white flex items-center gap-2">
                 <i class="fas fa-arrow-left"></i> Back to Menu
             </button>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div class="h-96 bg-zinc-800 border border-zinc-700">
                     <img id="detailImage" src="" class="w-full h-full object-cover">
@@ -312,7 +106,7 @@
                     <h2 id="detailName" class="text-4xl font-oswald font-bold uppercase mb-2">Product Name</h2>
                     <div id="detailPrice" class="text-2xl text-street-yellow font-bold mb-6">RM 0.00</div>
                     <p id="detailDesc" class="text-gray-400 mb-8 leading-relaxed">Description goes here.</p>
-                    
+
                     <div class="flex gap-4">
                         <input type="number" value="1" min="1" class="bg-black border border-zinc-600 text-white w-16 text-center p-3">
                         <button id="detailAddBtn" class="flex-1 bg-white text-black font-bold uppercase tracking-widest hover:bg-street-yellow transition p-3">
@@ -323,9 +117,10 @@
             </div>
         </section>
 
+        <!-- CART PAGE -->
         <section id="cartPage" class="page-section hidden px-6 py-12 max-w-3xl mx-auto">
             <h2 class="text-3xl font-oswald font-bold uppercase mb-8">Your Cart</h2>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="md:col-span-2 bg-zinc-900 p-6 border border-zinc-800">
                     <div id="cartList" class="space-y-4">
@@ -350,6 +145,7 @@
             </div>
         </section>
 
+        <!-- CHECKOUT PAGE -->
         <section id="checkoutPage" class="page-section hidden px-6 py-12 max-w-2xl mx-auto">
             <div class="mb-8 text-center">
                 <h2 class="text-3xl font-oswald font-bold uppercase">Secure Checkout</h2>
@@ -362,11 +158,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs text-gray-500 uppercase mb-1">Name</label>
-                            <input type="text" required class="w-full bg-black border border-zinc-700 p-3 text-white focus:border-street-yellow outline-none">
+                            <input type="text" required class="w-full bg-black border border-zinc-700 p-3 text-white">
                         </div>
                         <div>
                             <label class="block text-xs text-gray-500 uppercase mb-1">Phone (WhatsApp)</label>
-                            <input type="tel" required class="w-full bg-black border border-zinc-700 p-3 text-white focus:border-street-yellow outline-none">
+                            <input type="tel" required class="w-full bg-black border border-zinc-700 p-3 text-white">
                         </div>
                     </div>
                 </div>
@@ -404,6 +200,7 @@
             </form>
         </section>
 
+        <!-- ADMIN PAGE -->
         <section id="adminPage" class="page-section hidden px-6 py-12 max-w-4xl mx-auto">
             <h2 class="text-3xl font-oswald font-bold uppercase mb-8 text-red-500">Admin Panel</h2>
 
@@ -413,19 +210,19 @@
                     <form id="adminForm" onsubmit="addProduct(event)" class="space-y-4">
                         <div>
                             <label class="block text-xs text-gray-500 mb-1">Product Name</label>
-                            <input type="text" id="prodName" required placeholder="e.g. Kopi O" class="w-full bg-black border border-zinc-700 p-2 text-sm text-white">
+                            <input type="text" id="prodName" required class="w-full bg-black border border-zinc-700 p-2 text-white">
                         </div>
                         <div>
                             <label class="block text-xs text-gray-500 mb-1">Price (RM)</label>
-                            <input type="number" id="prodPrice" step="0.01" required placeholder="3.50" class="w-full bg-black border border-zinc-700 p-2 text-sm text-white">
+                            <input type="number" id="prodPrice" step="0.01" required class="w-full bg-black border border-zinc-700 p-2 text-white">
                         </div>
                         <div>
                             <label class="block text-xs text-gray-500 mb-1">Description</label>
-                            <textarea id="prodDesc" required rows="2" class="w-full bg-black border border-zinc-700 p-2 text-sm text-white"></textarea>
+                            <textarea id="prodDesc" required rows="2" class="w-full bg-black border border-zinc-700 p-2 text-white"></textarea>
                         </div>
                         <div>
                             <label class="block text-xs text-gray-500 mb-1">Image URL</label>
-                            <input type="url" id="prodImg" placeholder="https://..." class="w-full bg-black border border-zinc-700 p-2 text-sm text-white">
+                            <input type="url" id="prodImg" class="w-full bg-black border border-zinc-700 p-2 text-white">
                         </div>
                         <button type="submit" class="w-full bg-zinc-700 text-white font-bold py-2 hover:bg-white hover:text-black transition text-sm uppercase">
                             Add Item
@@ -443,8 +240,7 @@
                                 <th class="p-3 text-right">Action</th>
                             </tr>
                         </thead>
-                        <tbody id="adminTableBody">
-                            </tbody>
+                        <tbody id="adminTableBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -456,6 +252,9 @@
         <p>&copy; 2025 Kopi Jalanan. Kota Samarahan.</p>
         <p class="mt-2">Student Project Prototype.</p>
     </footer>
+
+    <!-- External JS -->
+    <script src="script.js"></script>
 
 </body>
 </html>
